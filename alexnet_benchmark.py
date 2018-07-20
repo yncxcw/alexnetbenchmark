@@ -181,6 +181,7 @@ def time_tensorflow_run(session, target, info_string, writer):
   # build option for perf
   options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
   run_metadata = tf.RunMetadata()
+  tf.summary.scalar("loss", 1)
   summary_op = tf.summary.merge_all()
   #Run a few initial few rounds of iteration to burn up the device
   num_steps_burn_in = 10
@@ -188,14 +189,9 @@ def time_tensorflow_run(session, target, info_string, writer):
   total_duration_squared = 0.0
   for i in xrange(FLAGS.num_batches + num_steps_burn_in):
     start_time = time.time()
-    print("metadat ", type(run_metadata))
-    _, summary = session.run(
-                   [target, summary_op],
-                   options = options,
-                   run_metadata = run_metadata
-                   )
+    _, summary = session.run([target, summary_op], options=options, run_metadata = run_metadata)
     duration = time.time() - start_time
-    writer.add_run_metadata(run_metadata, "step%d" % i)
+    writer.add_run_metadata(run_metadata, info_string+"step%d" % i)
     writer.add_summary(summary, i)
     if i >= num_steps_burn_in:
       if not i % 10:
@@ -214,7 +210,6 @@ def time_tensorflow_run(session, target, info_string, writer):
 def run_benchmark():
   """Run the benchmark on AlexNet."""
   ##write out the tensorboard
-  writer = tf.summary.FileWriter("./tensorboard", graph=tf.get_default_graph())
   with tf.Graph().as_default(): 
     # Generate some dummy images.
     image_size = 224
@@ -239,6 +234,7 @@ def run_benchmark():
     config.gpu_options.allocator_type = 'BFC'
     sess = tf.Session(config=config)
     sess.run(init)
+    writer_forward = tf.summary.FileWriter("./tensorboard_forward", graph=tf.get_default_graph())
 
     # Run the forward benchmark.
     time_tensorflow_run(sess, pool5, "Forward", writer)
@@ -247,6 +243,7 @@ def run_benchmark():
     objective = tf.nn.l2_loss(pool5)
     # Compute the gradient with respect to all the parameters.
     grad = tf.gradients(objective, parameters)
+    writer_backward = tf.summary.FileWriter("./tensorboard_backwoard", graph=tf.get_default_graph())
     # Run the backward benchmark.
     time_tensorflow_run(sess, grad, "Forward-backward", writer)
 
@@ -266,7 +263,7 @@ if __name__ == '__main__':
   parser.add_argument(
       '--num_batches',
       type=int,
-      default=1000,
+      default=200,
       help='Number of batches to run.'
   )
   FLAGS, unparsed = parser.parse_known_args()
