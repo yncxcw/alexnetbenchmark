@@ -42,6 +42,8 @@ import time
 from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 
+from tensorflow.python.client import timeline
+
 FLAGS = None
 
 
@@ -194,7 +196,11 @@ def time_tensorflow_run(session, target, info_string, writer):
     writer.add_run_metadata(run_metadata, info_string+"step%d" % i)
     writer.add_summary(summary, i)
     if i >= num_steps_burn_in:
-      if not i % 10:
+      if not i % 50:
+        fetched_timeline = timeline.Timeline(run_metadata.step_stats)
+        chrome_trace = fetched_timeline.generate_chrome_trace_format()
+        with open(info_string+'timeline_02_step_%d.json' % i, 'w') as f:
+          f.write(chrome_trace)
         print ('%s: step %d, duration = %.3f' %
                (datetime.now(), i - num_steps_burn_in, duration))
       total_duration += duration
@@ -237,7 +243,7 @@ def run_benchmark():
     writer_forward = tf.summary.FileWriter("./tensorboard_forward", graph=tf.get_default_graph())
 
     # Run the forward benchmark.
-    time_tensorflow_run(sess, pool5, "Forward", writer)
+    time_tensorflow_run(sess, pool5, "Forward", writer_forward)
 
     # Add a simple objective so we can calculate the backward pass.
     objective = tf.nn.l2_loss(pool5)
@@ -245,7 +251,7 @@ def run_benchmark():
     grad = tf.gradients(objective, parameters)
     writer_backward = tf.summary.FileWriter("./tensorboard_backwoard", graph=tf.get_default_graph())
     # Run the backward benchmark.
-    time_tensorflow_run(sess, grad, "Forward-backward", writer)
+    time_tensorflow_run(sess, grad, "Forward-backward", writer_backward)
 
 
 def main(_):
