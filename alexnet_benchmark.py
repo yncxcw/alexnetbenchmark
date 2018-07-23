@@ -43,6 +43,7 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 
 from tensorflow.python.client import timeline
+from tensorflow.python.client import device_lib
 
 FLAGS = None
 
@@ -237,13 +238,16 @@ def run_benchmark():
 
     # Start running operations on the Graph.
     config = tf.ConfigProto()
-    config.gpu_options.allocator_type = 'BFC'
+    config.log_device_placement=True
+    config.allow_soft_placement=True
+    #config.gpu_options.allocator_type = 'BFC'
     sess = tf.Session(config=config)
     sess.run(init)
     writer_forward = tf.summary.FileWriter("./tensorboard_forward", graph=tf.get_default_graph())
 
     # Run the forward benchmark.
-    time_tensorflow_run(sess, pool5, "Forward", writer_forward)
+    with tf.device("/device:CPU:0"):
+        time_tensorflow_run(sess, pool5, "Forward", writer_forward)
 
     # Add a simple objective so we can calculate the backward pass.
     objective = tf.nn.l2_loss(pool5)
@@ -251,11 +255,16 @@ def run_benchmark():
     grad = tf.gradients(objective, parameters)
     writer_backward = tf.summary.FileWriter("./tensorboard_backwoard", graph=tf.get_default_graph())
     # Run the backward benchmark.
-    time_tensorflow_run(sess, grad, "Forward-backward", writer_backward)
+    #with tf.device("/device:GPU:0"):
+    #    time_tensorflow_run(sess, grad, "Forward-backward", writer_backward)
 
 
 def main(_):
   run_benchmark()
+
+
+def list_all_devices():
+  print(device_lib.list_local_devices())
 
 
 if __name__ == '__main__':
@@ -269,8 +278,9 @@ if __name__ == '__main__':
   parser.add_argument(
       '--num_batches',
       type=int,
-      default=200,
+      default=1000,
       help='Number of batches to run.'
   )
+  list_all_devices() 
   FLAGS, unparsed = parser.parse_known_args()
   tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
