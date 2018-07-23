@@ -239,7 +239,7 @@ def run_benchmark():
     # Start running operations on the Graph.
     config = tf.ConfigProto()
     config.log_device_placement=True
-    config.allow_soft_placement=True
+    config.allow_soft_placement=False
     #config.gpu_options.allocator_type = 'BFC'
     sess = tf.Session(config=config)
     sess.run(init)
