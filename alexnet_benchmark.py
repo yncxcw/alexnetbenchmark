@@ -272,13 +272,13 @@ if __name__ == '__main__':
   parser.add_argument(
       '--batch_size',
       type=int,
-      default=128,
+      default=512,
       help='Batch size.'
   )
   parser.add_argument(
       '--num_batches',
       type=int,
-      default=10,
+      default=100,
       help='Number of batches to run.'
   )
   list_all_devices() 
