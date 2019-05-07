@@ -221,7 +221,7 @@ def run_benchmark():
   ##write out the tensorboard
   with tf.Graph().as_default(): 
     # Generate some dummy images.
-    image_size = 224
+    image_size = 64
     # Note that our padding definition is slightly different the cuda-convnet.
     # In order to force the model to start with the same activations sizes,
     # we add 3 to the image_size and employ VALID padding above.
